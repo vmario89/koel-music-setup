@@ -101,7 +101,7 @@ Koel cannot connect to the database. Let's set it up.
  > koel
  
  DB password []:
- > nZ85pEkeQPhJ1458YGre
+ > yourPassword
  
 Migrating database
 Let's create the admin account.
