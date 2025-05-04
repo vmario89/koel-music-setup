@@ -1,202 +1,197 @@
 # About
-Due to the lack of good description on how to setup Koel i decided to publish this manual because the installation of Koel required some hours for myself. I hope you will come to a result quicker than me with this cooking recipe ;-)
+Due to the lack of good description on how to setup Koel (Version 7.2.2) i decided to publish this manual because the installation of Koel required some hours for myself. I hope you will come to a result quicker than me with this cooking recipe ;-)
 
-Some details of my platform:
-Operating system: Raspbian GNU/Linux 9.4 (stretch)
-Kernel: 4.14.69-v7+
-Architecture: armv7l
-Model: Raspberry Pi 3 Model B Rev 1.2
+## Install FFmpeg
+```
+sudo apt install ffmpeg
+```
+
+## Install PostgreSQL
+```
+sudo apt install postgresql
+```
+
+Set it up (create db + user):
+```
+su - postgres bash -c "createuser --no-superuser --pwprompt koel";
+su - postgres bash -c "createdb -O koel -E UTF8 -T template0 koel";
+su - postgres bash -c 'psql -d koel -c "GRANT ALL PRIVILEGES ON DATABASE koel TO koel;"'
+```
+
+## Instal Redis Caching Server
+```
+sudo apt install redis
+systemctl status redis-server
+```
+
+## Install PHP requirements (we explicitely use 8.3, because 8.4 is not supported yet)
+```
+sudo add-apt-repository ppa:ondrej/php
+sudo apt update
+sudo apt install php8.3 php8.3-xml php8.3-mbstring php8.3-curl php8.3-zip php8.3-pgsql php8.3-gd php8.3-bcmath php8.3-intl php8.3-sqlite3 php8.3-cli php8.3-redis
+```
+
+## Adjustments to php.ini (FPM)
+```
+post_max_size = 50M
+upload_max_filesize = 50M
+m.max_children = 10
+```
+
+## Setup PHP Composer
+```
+cd /tmp/
+wget -qO composer-setup.php https://getcomposer.org/installer
+COMPOSER_HASH=`wget -qO - https://composer.github.io/installer.sig`
+php -r "if (hash_file('SHA384', 'composer-setup.php') === '$COMPOSER_HASH') { echo 'Installationsskript ist in Ordnung.'; } else { echo 'ACHTUNG: Das Installationsskript ist FEHLERHAFT.'; unlink('composer-setup.php'); } echo PHP_EOL;"
+
+php8.3 composer-setup.php --install-dir=/usr/local/bin/ --filename=composer
+```
+
+## Install NPM + Yarn using "n"
+```
+curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n | bash -s install lts
+npm install -g n
+npm install --global yarn
+```
 
 ## Clone Repository
 ```
-cd /opt
-git clone https://github.com/phanan/koel.git
-cd koel
-git checkout v3.7.2
+cd /var/www/vhosts/
+git clone https://github.com/phanan/koel.git koel.myserver.net
+cd koel.myserver.net/
+git checkout tags/v7.2.2
 ```
 
-## Install Software Basics
+## Compile the project
 ```
-apt-get install php php-xml php-mbstring php-curl php-zip php-pgsql postgresql apache2
-```
-
-## Install NodeJS
-```
-curl -sL https://deb.nodesource.com/setup_10.x | bash -
-apt-get install -y nodejs
+/usr/bin/php8.3 /usr/local/bin/composer install --optimize-autoloader --no-dev
 ```
 
-## Install Yarn
+## Init Koel
 ```
-curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-apt-get update
-apt-get install yarn
+php8.3 artisan koel:init
 ```
 
-## Get Composer
+## Configure .env file
 ```
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php -r "if (hash_file('SHA384', 'composer-setup.php') === '544e09ee996cdf60ece3804abc52599c22b1f40f4323403c44d44fdfdd586475ca9813a858088ffbc1f233e9b180f061') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
-php composer-setup.php
-php -r "unlink('composer-setup.php');"
+vim /var/www/vhosts/koel.myserver.net/.env
 ```
 
-## Use Composer
+## The default user credentials are:
+user: `admin@koel.dev`
+password: `KoelIsCool`
+
+## Adjust permissions
 ```
-php composer.phar install
+chown -R www-data:www-data /var/www/vhosts/koel.myserver.net
 ```
 
-## Make Postgres Database
+## Adjustments to Manifest
+We create that file. See the provided example file in same dir.
 ```
-sudo - postgres
-createuser --no-superuser --pwprompt koel
-psql
-CREATE database koel WITH OWNER koel ENCODING 'utf8' LC_COLLATE = 'en_US.UTF-8' LC_CTYPE = 'en_US.UTF-8';
-GRANT ALL PRIVILEGES ON DATABASE koel TO koel;
-\q
+vim /var/www/vhosts/koel.myserver.net/public/manifest.json
 ```
 
-## Edit php config
+## Give a test
+Later we use nginx, so forget about this
 ```
-vim /etc/php/7.0/apache2/php.ini
-#enable pdo_pgsql and pgsql extensions - it's questionable if this is really required
-extension=php_pdo_pgsql.dll
-extension=php_pfsql.dll
-memory_limit=512M
+php8.3 artisan serve --host=127.0.0.1 --port=8000
 ```
 
-## Run npm/yarn
+## Logs
+Logs can be found at
 ```
-vim /opt/koel/packages.json #replace ^4.7.2 with ~4.7.2 for node-sass
- 
-npm update
-npm install --unsafe-perm=true --allow-root
+less /var/www/vhosts/koel.myserver.net/storage/log/laravel.log
 ```
-
-## Setup Koel
-```
-# Populate credentials during the process
-php artisan koel:init
- 
-Koel cannot connect to the database. Let's set it up.
- 
- Your DB driver of choice [MySQL/MariaDB]:
-  [mysql     ] MySQL/MariaDB
-  [pgsql     ] PostgreSQL
-  [sqlsrv    ] SQL Server
-  [sqlite-e2e] SQLite
- > pgsql
- 
- DB host:
- > localhost
- 
- DB port (leave empty for default) []:
- > 5432
- 
- DB name:
- > koel
- 
- DB user:
- > koel
- 
- DB password []:
- > yourPassword
- 
-Migrating database
-Let's create the admin account.
- 
- Your name:
- > Administrator
- 
- Your email address:
- > admin@admin.de
- 
- Your desired password:
- >
- 
- Again, just to make sure:
- >
- 
-Seeding initial data
-The absolute path to your media directory. If this is skipped (left blank) now, you can set it later via the web interface.
- 
- Media path []:
- > /mnt/shared_media
- 
-Compiling front-end stuff
-sh: 1: yarn: not found
- 
-🎆  Success! Koel can now be run from localhost with `php artisan serve`.
-You can also scan for media with `php artisan koel:sync`.
-Again, for more configuration guidance, refer to
-📙  https://koel.phanan.net/docs
-or open the .env file in the root installation folder.
-Thanks for using Koel. You rock!
-```
-
-## Apache Reverse Proxy
-```
-<VirtualHost *:80>
- RewriteEngine on
- RewriteCond %{HTTPS} !^on$ [NC]
- RewriteRule . https://%{HTTP_HOST}%{REQUEST_URI} [L]
-</VirtualHost>
-<VirtualHost *:443>
- ServerName music.yourdomain.de
- Header set Access-Control-Allow-Origin "https://music.yourdomain.de"
- Header set Access-Control-Allow-Headers "x-requested-with, Content-Type, origin, authorization, accept, client-security-token"
- SSLEngine on
- SSLVerifyClient none
- SSLCertificateFile /etc/ssl/yourdomain.de.pem
- 
- ProxyPass / http://127.0.0.1:8000/
- ProxyPassReverse / http://127.0.0.1:8000/
-</VirtualHost>
-```
+## nginx Web Server
+Config sample can be found in Koel directory (the official one is not complete). We use:
 
 ```
-a2enmod alias  rewrite proxy proxy_html proxy_http ssl vhost_alias xml2enc
-a2enmod music.yourdomain.de.conf
-apachectl configtest
-service apache2 restart
+server {
+    server_name koel.myserver.net;
+    listen 443 ssl;
+    error_log /var/log/nginx/koel.myserver.net.error.log;
+
+	ssl_certificate /etc/letsencrypt/live/wildcard.myserver.net/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/wildcard.myserver.net/privkey.pem;
+	ssl_session_timeout 5m;
+	ssl_session_cache   shared:SSL:10m;
+	ssl_session_tickets off;
+	ssl_protocols TLSv1.3;
+	ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256;
+	ssl_prefer_server_ciphers off;
+	ssl_dhparam /etc/ssl/dhparamMozilla.pem; # Your web server supports insufficiently secure parameters for Diffie-Hellman key exchange. 
+
+	index index.php;
+	root /var/www/vhosts/koel.myserver.net/public;
+
+    gzip            on;
+    gzip_types      text/plain text/css application/x-javascript text/xml application/xml application/xml+rss text/javascript application/json;
+    gzip_comp_level  9;
+    send_timeout    3600;
+    client_max_body_size  150M;
+
+	location / {
+		try_files $uri $uri/ /index.php?$query_string;
+	}
+
+    location /media/ {
+        internal;
+        alias $upstream_http_x_media_root;
+        error_log /var/log/nginx/koel.myserver.net.error.log;
+    }
+	
+    location ~ \.php$ {
+        try_files $uri $uri/ /index.php?$args;
+
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+
+		fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_intercept_errors on;
+        include  fastcgi_params;
+  }
+
+}
+ 
+server {
+    listen 80;
+    server_name koel.myserver.net;
+    location / {
+        return 301 https://koel.myserver.net$request_uri;
+    }
+}
 ```
 
-## Dirty hack to enable https
+## Give some last config checks
 ```
-vim /opt/koel/routes/web.php
- 
-#add the URL:: lines to make it work
- 
-<?php
- 
-URL::forceRootUrl('https://sub.yourdomain.de:5443');
-URL::forceScheme('https');
- 
-Route::get('/', function () {
-    return view('index');
-});
- 
-// Some backward compatibilities.
-Route::get('/♫', function () {
-    return redirect('/');
-});
- 
-Route::get('/remote', function () {
-    return view('remote');
-});
+php8.3 artisan koel:doctor
 ```
 
-## Start Server
+## Create cache files for performance
+See https://laravel.com/docs/10.x/deployment#server-requirements
 ```
-#php artisan serve
-cd /opt/koel/;nohup php artisan serve --host 0.0.0.0 > koel-artisan-server.log &
+php8.3 artisan config:cache
+php8.3 artisan event:cache
+php8.3 artisan route:cache
+php8.3 artisan view:cache
 ```
 
-## Version overview
+After each .env file change, we have to rerun `php8.3 artisan config:cache`
+
+## Fix "too many attempts" in user interface
 ```
-php -V #7.0
-npm --version #6.4.1
-nodejs v10.11.0
-yarn --version #1.9.4
+vim /var/www/vhosts/koel.myserver.net/app/Http/Kernel.php
+```
+We change 
+`'throttle:60,1',` to `'throttle:6000,1',`
+
+## Upload music and listen
+If you have a lot of music, you can sync it with rsync
+```
+rsync --remove-source-files -va /home/myuser/music/ user@myserver:/mnt/music/koel/ --progress
 ```
