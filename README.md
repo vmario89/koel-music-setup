@@ -188,10 +188,54 @@ After each .env file change, we have to rerun `php8.3 artisan config:cache`
 vim /var/www/vhosts/koel.myserver.net/app/Http/Kernel.php
 ```
 We change 
-`'throttle:60,1',` to `'throttle:6000,1',`
+`'throttle:60,1',` to `'throttle:60000,1',`
+
+```
+sed -i "s/throttle:60,1/throttle:60000,1/" /var/www/vhosts/koel.myserver.net/app/Http/Kernel.php
+```
 
 ## Upload music and listen
 If you have a lot of music, you can sync it with rsync
 ```
 rsync --remove-source-files -va /home/myuser/music/ user@myserver:/mnt/music/koel/ --progress
+```
+
+# Upgrade
+```
+#!/bin/bash
+
+LATEST_RELEASE="7.3.1"
+
+read -p "$LATEST_RELEASE korrekt?" -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+	BUP="/backup"
+	BUP_POSTGRES="$BUP"/db/postgres
+	mkdir -p $BUP_POSTGRES > /dev/null 2>&1
+
+	TGT="/var/www/vhosts/koel.myserver.net"
+
+	#db backup
+	echo "Backing up pgsql db"
+	KOEL_DB=koel_$(date +"%m-%d-%Y").sql
+	sudo -iu postgres bash -c "pg_dump koel > $KOEL_DB" && mv /var/lib/postgresql/$KOEL_DB "$BUP_POSTGRES"/$KOEL_DB
+
+	#backup directory
+	echo "Backing up directory"
+	rm -rf $TGT.bup > /dev/null 2>&1
+	cp -R $TGT $TGT.bup
+
+	#upgrade
+	cd $TGT
+	git pull
+	git checkout v$LATEST_RELEASE
+	/usr/bin/php8.3 /usr/local/bin/composer install --optimize-autoloader --no-dev
+	/usr/bin/php8.3 artisan koel:init
+
+	#update caches
+	/usr/bin/php8.3 artisan config:cache
+	/usr/bin/php8.3 artisan event:cache
+	/usr/bin/php8.3 artisan route:cache
+	/usr/bin/php8.3 artisan view:cache
+fi
 ```
