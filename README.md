@@ -228,6 +228,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 	#upgrade
 	cd $TGT
 	git pull
+	git stash
 	git checkout v$LATEST_RELEASE
 	/usr/bin/php8.3 /usr/local/bin/composer install --optimize-autoloader --no-dev
 	/usr/bin/php8.3 artisan koel:init
@@ -237,5 +238,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 	/usr/bin/php8.3 artisan event:cache
 	/usr/bin/php8.3 artisan route:cache
 	/usr/bin/php8.3 artisan view:cache
+
+	#fix permissions
+	chown -R www-data:www-data $TGT
+
+	#fix throttle
+	sed -i "s/throttle:60,1/throttle:60000,1/" $TGT/app/Http/Kernel.php
+
 fi
 ```
