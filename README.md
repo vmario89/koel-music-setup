@@ -48,11 +48,13 @@ php -r "if (hash_file('SHA384', 'composer-setup.php') === '$COMPOSER_HASH') { ec
 php8.3 composer-setup.php --install-dir=/usr/local/bin/ --filename=composer
 ```
 
-## Install NPM + Yarn using "n"
+## Install NPM + pnpm (previously it was yarn) using "n"
 ```
 curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n | bash -s install lts
 npm install -g n
-npm install --global yarn
+#npm install --global yarn
+npm install --global pnpm
+
 ```
 
 ## Clone Repository
