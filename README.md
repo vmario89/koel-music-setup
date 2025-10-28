@@ -24,11 +24,11 @@ sudo apt install redis
 systemctl status redis-server
 ```
 
-## Install PHP requirements (we explicitely use 8.3, because 8.4 is not supported yet)
+## Install PHP requirements (we explicitely use 8.4)
 ```
 sudo add-apt-repository ppa:ondrej/php
 sudo apt update
-sudo apt install php8.3 php8.3-xml php8.3-mbstring php8.3-curl php8.3-zip php8.3-pgsql php8.3-gd php8.3-bcmath php8.3-intl php8.3-sqlite3 php8.3-cli php8.3-redis
+sudo apt install php8.4 php8.4-xml php8.4-mbstring php8.4-curl php8.4-zip php8.4-pgsql php8.4-gd php8.4-bcmath php8.4-intl php8.4-sqlite3 php8.4-cli php8.4-redis php8.4-fpm
 ```
 
 ## Adjustments to php.ini (FPM)
@@ -45,7 +45,7 @@ wget -qO composer-setup.php https://getcomposer.org/installer
 COMPOSER_HASH=`wget -qO - https://composer.github.io/installer.sig`
 php -r "if (hash_file('SHA384', 'composer-setup.php') === '$COMPOSER_HASH') { echo 'Installationsskript ist in Ordnung.'; } else { echo 'ACHTUNG: Das Installationsskript ist FEHLERHAFT.'; unlink('composer-setup.php'); } echo PHP_EOL;"
 
-php8.3 composer-setup.php --install-dir=/usr/local/bin/ --filename=composer
+php8.4 composer-setup.php --install-dir=/usr/local/bin/ --filename=composer
 ```
 
 ## Install NPM + pnpm (previously it was yarn) using "n"
@@ -67,12 +67,12 @@ git checkout tags/v7.2.2
 
 ## Compile the project
 ```
-/usr/bin/php8.3 /usr/local/bin/composer install --optimize-autoloader --no-dev
+/usr/bin/php8.4 /usr/local/bin/composer install --optimize-autoloader --no-dev
 ```
 
 ## Init Koel
 ```
-php8.3 artisan koel:init
+php8.4 artisan koel:init
 ```
 
 ## Configure .env file
@@ -98,7 +98,7 @@ vim /var/www/vhosts/koel.myserver.net/public/manifest.json
 ## Give a test
 Later we use nginx, so forget about this
 ```
-php8.3 artisan serve --host=127.0.0.1 --port=8000
+php8.4 artisan serve --host=127.0.0.1 --port=8000
 ```
 
 ## Logs
@@ -151,7 +151,7 @@ server {
         fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
 
-		fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+		fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
         fastcgi_index index.php;
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_intercept_errors on;
@@ -171,19 +171,19 @@ server {
 
 ## Give some last config checks
 ```
-php8.3 artisan koel:doctor
+php8.4 artisan koel:doctor
 ```
 
 ## Create cache files for performance
 See https://laravel.com/docs/10.x/deployment#server-requirements
 ```
-php8.3 artisan config:cache
-php8.3 artisan event:cache
-php8.3 artisan route:cache
-php8.3 artisan view:cache
+php8.4 artisan config:cache
+php8.4 artisan event:cache
+php8.4 artisan route:cache
+php8.4 artisan view:cache
 ```
 
-After each .env file change, we have to rerun `php8.3 artisan config:cache`
+After each .env file change, we have to rerun `php8.4 artisan config:cache`
 
 ## Fix "too many attempts" in user interface
 ```
@@ -232,14 +232,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 	git pull
 	git stash
 	git checkout v$LATEST_RELEASE
-	/usr/bin/php8.3 /usr/local/bin/composer install --optimize-autoloader --no-dev
-	/usr/bin/php8.3 artisan koel:init
+	/usr/bin/php8.4 /usr/local/bin/composer install --optimize-autoloader --no-dev
+	/usr/bin/php8.4 artisan koel:init
 
 	#update caches
-	/usr/bin/php8.3 artisan config:cache
-	/usr/bin/php8.3 artisan event:cache
-	/usr/bin/php8.3 artisan route:cache
-	/usr/bin/php8.3 artisan view:cache
+	/usr/bin/php8.4 artisan config:cache
+	/usr/bin/php8.4 artisan event:cache
+	/usr/bin/php8.4 artisan route:cache
+	/usr/bin/php8.4 artisan view:cache
 
 	#fix permissions
 	chown -R www-data:www-data $TGT
