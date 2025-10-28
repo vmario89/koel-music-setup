@@ -206,7 +206,7 @@ rsync --remove-source-files -va /home/myuser/music/ user@myserver:/mnt/music/koe
 ```
 #!/bin/bash
 
-LATEST_RELEASE="7.3.1"
+LATEST_RELEASE="8.1.0"
 
 read -p "$LATEST_RELEASE korrekt?" -n 1 -r
 echo
