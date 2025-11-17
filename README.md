@@ -249,3 +249,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 fi
 ```
+
+
+## Stuff
+```
+find /mnt/storagespace/koel -newermt "2025-10-10"
+```
