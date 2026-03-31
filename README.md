@@ -33,8 +33,8 @@ sudo apt install php8.5 php8.5-xml php8.5-mbstring php8.5-curl php8.5-zip php8.5
 
 ## Adjustments to php.ini (FPM)
 ```
-post_max_size = 50M
-upload_max_filesize = 50M
+post_max_size = 150M
+upload_max_filesize = 150M
 ```
 
 ## Setup PHP Composer
@@ -44,7 +44,7 @@ wget -qO composer-setup.php https://getcomposer.org/installer
 COMPOSER_HASH=`wget -qO - https://composer.github.io/installer.sig`
 php -r "if (hash_file('SHA384', 'composer-setup.php') === '$COMPOSER_HASH') { echo 'Installationsskript ist in Ordnung.'; } else { echo 'ACHTUNG: Das Installationsskript ist FEHLERHAFT.'; unlink('composer-setup.php'); } echo PHP_EOL;"
 
-php8.4 composer-setup.php --install-dir=/usr/local/bin/ --filename=composer
+php8.5 composer-setup.php --install-dir=/usr/local/bin/ --filename=composer
 ```
 
 ## Install NPM + pnpm (previously it was yarn) using "n"
@@ -61,17 +61,17 @@ npm install --global pnpm
 cd /var/www/vhosts/
 git clone https://github.com/phanan/koel.git koel.myserver.net
 cd koel.myserver.net/
-git checkout tags/v7.2.2
+git checkout tags/v8.3.1
 ```
 
 ## Compile the project
 ```
-/usr/bin/php8.4 /usr/local/bin/composer install --optimize-autoloader --no-dev
+/usr/bin/php8.5 /usr/local/bin/composer install --optimize-autoloader --no-dev
 ```
 
 ## Init Koel
 ```
-php8.4 artisan koel:init
+php8.5 artisan koel:init
 ```
 
 ## Configure .env file
@@ -97,7 +97,7 @@ vim /var/www/vhosts/koel.myserver.net/public/manifest.json
 ## Give a test
 Later we use nginx, so forget about this
 ```
-php8.4 artisan serve --host=127.0.0.1 --port=8000
+php8.5 artisan serve --host=127.0.0.1 --port=8000
 ```
 
 ## Logs
@@ -114,18 +114,18 @@ server {
     listen 443 ssl;
     error_log /var/log/nginx/koel.myserver.net.error.log;
 
-	ssl_certificate /etc/letsencrypt/live/wildcard.myserver.net/fullchain.pem;
-	ssl_certificate_key /etc/letsencrypt/live/wildcard.myserver.net/privkey.pem;
-	ssl_session_timeout 5m;
-	ssl_session_cache   shared:SSL:10m;
-	ssl_session_tickets off;
-	ssl_protocols TLSv1.3;
-	ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256;
-	ssl_prefer_server_ciphers off;
-	ssl_dhparam /etc/ssl/dhparamMozilla.pem; # Your web server supports insufficiently secure parameters for Diffie-Hellman key exchange. 
+    ssl_certificate /etc/letsencrypt/live/wildcard.myserver.net/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/wildcard.myserver.net/privkey.pem;
+    ssl_session_timeout 5m;
+    ssl_session_cache   shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256;
+    ssl_prefer_server_ciphers off;
+    ssl_dhparam /etc/ssl/dhparamMozilla.pem; # Your web server supports insufficiently secure parameters for Diffie-Hellman key exchange. 
 
-	index index.php;
-	root /var/www/vhosts/koel.myserver.net/public;
+    index index.php;
+    root /var/www/vhosts/koel.myserver.net/public;
 
     gzip            on;
     gzip_types      text/plain text/css application/x-javascript text/xml application/xml application/xml+rss text/javascript application/json;
@@ -133,16 +133,16 @@ server {
     send_timeout    3600;
     client_max_body_size  150M;
 
-	location / {
-		try_files $uri $uri/ /index.php?$query_string;
-	}
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
 
     location /media/ {
         internal;
         alias $upstream_http_x_media_root;
         error_log /var/log/nginx/koel.myserver.net.error.log;
     }
-	
+    
     location ~ \.php$ {
         try_files $uri $uri/ /index.php?$args;
 
@@ -150,7 +150,7 @@ server {
         fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
 
-		fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.5-fpm.sock;
         fastcgi_index index.php;
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_intercept_errors on;
@@ -170,19 +170,19 @@ server {
 
 ## Give some last config checks
 ```
-php8.4 artisan koel:doctor
+php8.5 artisan koel:doctor
 ```
 
 ## Create cache files for performance
 See https://laravel.com/docs/10.x/deployment#server-requirements
 ```
-php8.4 artisan config:cache
-php8.4 artisan event:cache
-php8.4 artisan route:cache
-php8.4 artisan view:cache
+php8.5 artisan config:cache
+php8.5 artisan event:cache
+php8.5 artisan route:cache
+php8.5 artisan view:cache
 ```
 
-After each .env file change, we have to rerun `php8.4 artisan config:cache`
+After each .env file change, we have to rerun `php8.5 artisan config:cache`
 
 ## Fix "too many attempts" in user interface
 ```
@@ -205,7 +205,11 @@ rsync --remove-source-files -va /home/myuser/music/ user@myserver:/mnt/music/koe
 ```
 #!/bin/bash
 
-LATEST_RELEASE="8.1.0"
+LATEST_RELEASE_V=$(curl --silent "https://api.github.com/repos/koel/koel/releases/latest" | jq -r .tag_name)
+LATEST_RELEASE=$(echo $LATEST_RELEASE_V | sed -e 's/v//')
+
+#overwrite
+#LATEST_RELEASE="8.3.1"
 
 read -p "$LATEST_RELEASE korrekt?" -n 1 -r
 echo
@@ -226,31 +230,32 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 	rm -rf $TGT.bup > /dev/null 2>&1
 	cp -R $TGT $TGT.bup
 
+	PHP="php8.5"
+
 	#upgrade
 	cd $TGT
 	git pull
 	git stash
 	git checkout v$LATEST_RELEASE
-	/usr/bin/php8.4 /usr/local/bin/composer install --optimize-autoloader --no-dev
-	/usr/bin/php8.4 artisan koel:init
+	/usr/bin/$PHP /usr/local/bin/composer install --optimize-autoloader --no-dev
+	/usr/bin/$PHP artisan koel:init
 
 	#update caches
-	/usr/bin/php8.4 artisan config:cache
-	/usr/bin/php8.4 artisan event:cache
-	/usr/bin/php8.4 artisan route:cache
-	/usr/bin/php8.4 artisan view:cache
+	/usr/bin/$PHP artisan config:cache
+	/usr/bin/$PHP artisan event:cache
+	/usr/bin/$PHP artisan route:cache
+	/usr/bin/$PHP artisan view:cache
 
 	#fix permissions
 	chown -R www-data:www-data $TGT
 
-	#fix throttle
-	sed -i "s/throttle:60,1/throttle:60000,1/" $TGT/app/Http/Kernel.php
-
+	#fix throttle- seems to be obsolete since 7.6.3
+	#sed -i "s/throttle:60,1/throttle:60000,1/" $TGT/app/Http/Kernel.php
 fi
 ```
 
 
 ## Stuff
 ```
-find /mnt/storagespace/koel -newermt "2025-10-10"
+find /mnt/storagespace/koel -newermt "2026-03-31"
 ```
