@@ -133,6 +133,10 @@ server {
     send_timeout    3600;
     client_max_body_size  150M;
 
+    add_header Access-Control-Allow-Origin: "*";
+    add_header Access-Control-Allow-Methods: "POST, PUT, PATCH, GET, DELETE, OPTIONS";
+    add_header Access-Control-Allow-Headers: "*";
+
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
